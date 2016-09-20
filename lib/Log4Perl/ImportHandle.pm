@@ -1,7 +1,9 @@
 package Log4Perl::ImportHandle; # Imports a Log4Perl handle with category
 
 use strict;
+use Carp;
 use Log::Log4perl;
+
 
 # This class imports an easy to use Log4Perl handle to the current class. Instead of
 # the not recommended way to use direct functions like DEBUG(), here you can define
@@ -75,7 +77,7 @@ use Log::Log4perl;
 # Don't use that method! It is not a method but used by perl when
 # this class is included to export a function in current namespace.
 sub import {
-	my $pkg = shift;
+  my $pkg = shift;
 
   my @param = @_;
 
@@ -90,21 +92,26 @@ sub import {
 
     $pair{ $param[0] } = '';
 
+  }elsif(scalar(@param) == 3){
+      croak "You can not call the importer with an unpair amount of parameters beyond 1";
   }else{ ## any parameter
     %pair = @param;
   }
 
 
-	my $caller = caller;
-	
-	require Exporter::AutoClean;
+  my $caller = caller;
+
+  require Exporter::AutoClean;
 
   foreach my $exportfunc (keys %pair){
 
     my $cat = $pair{$exportfunc};
 
+    # must be done before to keep reference to log4perl for desctruction
+    my $logger =  Log::Log4perl->get_logger( $cat );
+
     my %exports = (
-      "$exportfunc" => sub { return Log::Log4perl->get_logger( $cat ); },
+      "$exportfunc" => sub { return $logger }, # closure
     );
 
     # installs the function $exportfunc in the calling class
